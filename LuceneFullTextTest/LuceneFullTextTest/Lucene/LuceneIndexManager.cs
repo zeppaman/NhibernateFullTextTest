@@ -6,12 +6,14 @@ using Lucene.Net.Search;
 using Lucene.Net.Store;
 using System;
 using System.Collections.Generic;
+using Lucene.Net.Analysis.Standard;
 
 namespace LuceneFullTextTest
 {
    
     public class LuceneIndexManager: IDisposable
     {
+        public int CommitSize { get; set; }
         
         private static IndexWriter writer;
         private static IndexSearcher searcher;
@@ -26,24 +28,29 @@ namespace LuceneFullTextTest
         public string Path { get { return ".\\" + Name; } }
 
         private bool dirty = false;
+        int uncommittedFiles = 0;
 
         public LuceneIndexManager(string name)
         {
             this.Name = name;
+            this.CommitSize = 0;
             Init();
         }
 
         private void Init()
         {
-            analyzer = new WhitespaceAnalyzer();
+            analyzer = new StandardAnalyzer(global::Lucene.Net.Util.Version.LUCENE_30);
             InitIndex();
-            parser = new QueryParser(global::Lucene.Net.Util.Version.LUCENE_CURRENT, "", analyzer);
+            parser = new QueryParser(global::Lucene.Net.Util.Version.LUCENE_30, "", analyzer);
         }
 
         private void InitIndex()
         {
-            luceneIndexDirectory = FSDirectory.Open(Path);
+
+            //           luceneIndexDirectory = FSDirectory.Open(Path);
+            luceneIndexDirectory = MMapDirectory.Open(Path);
             writer = new IndexWriter(luceneIndexDirectory, analyzer, IndexWriter.MaxFieldLength.UNLIMITED);
+            
             reader = IndexReader.Open(luceneIndexDirectory, true);
             searcher = new IndexSearcher(reader);
         }
@@ -76,14 +83,27 @@ namespace LuceneFullTextTest
             AddDocument(doc);
 
         }
-
+        
         public void AddDocument(Document doc)
         {
             writer.AddDocument(doc);
             // writer.Optimize();
-            writer.Commit();
+            //writer.Commit();
+            uncommittedFiles++;
+            if(uncommittedFiles > this.CommitSize)
+            {
+                SaveUncommittedChanges();
+            }
             
             dirty = true;
+        }
+
+        internal void SaveUncommittedChanges()
+        {
+           
+            writer.Commit();
+
+            uncommittedFiles = 0;
         }
 
         public  List<Document> Query(string queryTxt, int start, int size)
@@ -148,12 +168,16 @@ namespace LuceneFullTextTest
         }
         public void Dispose()
         {
+            writer.Optimize();
+            SaveUncommittedChanges();
             DisposeIndex();
+            
             analyzer.Dispose();
             
         }
         public void DisposeIndex()
         {
+            writer.Commit();
             writer.Dispose();
             reader.Dispose();
             searcher.Dispose();

@@ -75,25 +75,35 @@ namespace LuceneFullTextTest
             var update = new SchemaUpdate(configuration);
             update.Execute(true, true);
 
-            //Creating data
-            using (ISession session = sessionFactory.OpenSession())
-            {
-                session.CacheMode = CacheMode.Ignore;
-                ITransaction t = session.BeginTransaction();
 
-                LogEntity entityToSave = null;
-                for (int i = 0; i < 100; i++)
-                {
-                    entityToSave = GenerateRandomEntity();
-                    session.Save(entityToSave);
-                   
-                }
+            LuceneIndexContext.Current.DefaultIndexManager.CommitSize = 10000;
+
+            //for (int k = 0; k< 100; k++)
+            //{
+            //    //Creating data
+            //    using (ISession session = sessionFactory.OpenSession())
+            //    {
+            //        session.CacheMode = CacheMode.Ignore;
+            //        ITransaction t = session.BeginTransaction();
+
+            //        LogEntity entityToSave = null;
+            //        for (int i = 0; i < 50000; i++)
+            //        {
+            //            entityToSave = GenerateRandomEntity();
+            //            session.Save(entityToSave);
+
+            //        }
 
 
-                t.Commit();
-            }
+            //        t.Commit();
 
-          List<Document> results=  LuceneIndexContext.Current.DefaultIndexManager.Query("Message:Hatter", "Level", SortField.STRING, true, 0,100);
+
+            //    }
+            //}
+
+            LuceneIndexContext.Current.DefaultIndexManager.SaveUncommittedChanges();
+          List<Document> results=  LuceneIndexContext.Current.DefaultIndexManager.Query(@"Message:Hatter AND Level:""INFO""", "Level"
+              , SortField.STRING, true, 1000000,100);
 
 
             PrintAll(results);

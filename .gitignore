@@ -2,3 +2,6 @@ LuceneFullTextTest/.vs/
 LuceneFullTextTest/LuceneFullTextTest/bin/
 LuceneFullTextTest/LuceneFullTextTest/obj/
 LuceneFullTextTest/packages/
+NhibernateFullTextTest/packages/
+NhibernateFullTextTest/NhibernateFullTextTest/bin/
+NhibernateFullTextTest/NhibernateFullTextTest/obj/

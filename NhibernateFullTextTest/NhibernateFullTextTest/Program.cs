@@ -42,21 +42,21 @@ namespace NhibernateFullTextTest
             var update = new SchemaUpdate(configuration);
             update.Execute(true, true);
 
-            //Creating data
-            using (ISession session = sessionFactory.OpenSession())
-            {
-                ITransaction t=session.BeginTransaction();
+            ////Creating data
+            //using (ISession session = sessionFactory.OpenSession())
+            //{
+            //    ITransaction t = session.BeginTransaction();
 
-                LogEntity entityToSave = null;
-                for (int i = 0; i < 10000; i++)
-                {
-                    entityToSave = GenerateRandomEntity();
-                    session.SaveOrUpdate(entityToSave);
-                }
-               
+            //    LogEntity entityToSave = null;
+            //    for (int i = 0; i < 10000; i++)
+            //    {
+            //        entityToSave = GenerateRandomEntity();
+            //        session.SaveOrUpdate(entityToSave);
+            //    }
 
-                t.Commit();
-            }
+
+            //    t.Commit();
+            //}
 
             using (var s = sessionFactory.OpenSession())
             using (var search = Search.CreateFullTextSession(s))
@@ -66,14 +66,33 @@ namespace NhibernateFullTextTest
                     .SetMaxResults(5)
                     .List<LogEntity>();
 
-               
+
 
                 tx.Commit();
             }
 
 
+            using (var s = sessionFactory.OpenSession())
+            using (var search = Search.CreateFullTextSession(s))
+            {
+                search.PurgeAll(typeof(LogEntity));
+               ITransaction transaction=     search.BeginTransaction();
+                var results = s.CreateCriteria<LogEntity>().SetMaxResults(10000).List();
 
-        }
+                int index = 0;
+                foreach(var v in results)
+                {
+                    index++;
+                    search.Index(v); //index each element
+                    
+                }
+                transaction.Commit();
+            }
+
+
+
+
+}
 
         static Random r = new Random();
         static string[] lines= File.ReadAllLines(".\\demo.txt");
